@@ -1,46 +1,79 @@
-
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  --brand-primary: #10b981;    
+  --brand-dark: #065f46;       /* Added for button hover */
+  --bg-app: #020617;           
+  --card-bg: #0f172a;          
+  --text-main: #f8fafc;        
+  --text-muted: #94a3b8;       
+  --border-color: #1e293b;     
+  --radius-custom: 1.25rem;
 }
 
-body {
-  background-color: red !important;
+/* 1. FORCE THE BROWSER CANVAS TO BE BLACK */
+html, body, #root {
+  background-color: var(--bg-app) !important;
+  color: var(--text-main);
   margin: 0;
-  min-width: 320px;
+  padding: 0;
   min-height: 100vh;
-  @apply bg-gray-50 text-gray-900; /* Sets the global background color */
+  width: 100%;
 }
 
-/* Customizing the Supabase Auth UI to match your theme */
+/* 2. THEME THE COMPONENTS */
+.btn-primary {
+  @apply px-6 py-3 text-white font-bold transition-all duration-200 active:scale-95 shadow-lg;
+  background-color: var(--brand-primary);
+  border-radius: var(--radius-custom);
+}
+
+.btn-primary:hover {
+  background-color: var(--brand-dark);
+}
+
+/* 3. DARK MODE SUPABASE AUTH UI */
+/* We change 'bg-white' to 'bg-slate-900' and text to white */
 .supabase-account-auth_ui_kit {
-  @apply font-sans;
+  @apply font-sans max-w-md mx-auto p-8 rounded-[2rem] shadow-2xl;
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color);
+}
+
+.supabase-account-auth_ui_kit label {
+  color: var(--text-muted) !important;
 }
 
 .supabase-account-auth_ui_kit button {
+  background-color: var(--brand-primary) !important;
+  color: white !important;
+  border-radius: var(--radius-custom) !important;
   @apply transition-all duration-200 active:scale-95 !important;
-  font-weight: 600 !important;
 }
 
 .supabase-account-auth_ui_kit input {
-  @apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all !important;
+  background-color: #1e293b !important; /* Slate 800 */
+  color: white !important;
+  border: 1px solid var(--border-color) !important;
+  @apply rounded-xl focus:ring-2 focus:ring-emerald-500 !important;
 }
 
-/* Custom Scrollbar for the 'Udemy' feel */
+/* 4. CUSTOM SCROLLBAR */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  background: var(--bg-app);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+  background: var(--border-color);
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }

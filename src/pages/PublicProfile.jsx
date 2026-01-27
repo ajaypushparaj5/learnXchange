@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
@@ -14,13 +15,15 @@ const getEmbedUrl = (url) => {
 };
 
 export default function PublicProfile() {
-  
   const { userId } = useParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [teacherCourses, setTeacherCourses] = useState([]);
   const { balance, fetchBalance } = useCoins();
+  
+  // Calculate embed URL
   const embedUrl = getEmbedUrl(profile?.demo_video_url);
+
   useEffect(() => {
     async function getTeacherData() {
       // 1. Fetch Profile Info
@@ -46,6 +49,11 @@ export default function PublicProfile() {
   const handleEnroll = async (course) => {
     const { data: { user } } = await supabase.auth.getUser();
     
+    if (user.id === course.teacher_id) {
+        alert("This is your own course!");
+        return;
+    }
+
     if (balance < course.price_coins) {
       alert("❌ Insufficient coins to enroll!");
       return;
@@ -65,30 +73,38 @@ export default function PublicProfile() {
     }
   };
 
-  if (!profile) return <div className="p-10 text-center font-bold">Loading Teacher Portfolio...</div>;
+  if (!profile) return (
+    <div className="flex h-screen items-center justify-center font-bold text-emerald-500 bg-[#020617]">
+      <div className="animate-pulse">Loading Teacher Portfolio...</div>
+    </div>
+  );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-10 pb-20">
+    <div className="max-w-5xl mx-auto space-y-10 pb-20 text-white">
       {/* Header Section */}
-      <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center text-center">
-        <div className="w-28 h-28 bg-gradient-to-br from-blue-600 to-indigo-500 text-white rounded-full flex items-center justify-center text-4xl font-black mb-4 shadow-lg">
+      <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-slate-800 shadow-2xl flex flex-col items-center text-center">
+        <div className="w-28 h-28 bg-gradient-to-br from-emerald-600 to-teal-500 text-white rounded-full flex items-center justify-center text-4xl font-black mb-4 shadow-xl ring-4 ring-emerald-500/20">
           {profile.username?.[0].toUpperCase()}
         </div>
-        <h2 className="text-3xl font-black text-gray-900">{profile.username}</h2>
-        <p className="text-gray-500 mt-3 max-w-xl text-lg leading-relaxed">{profile.bio || "This teacher hasn't added a bio yet."}</p>
+        <h2 className="text-3xl font-black text-white">{profile.username}</h2>
+        <p className="text-slate-400 mt-3 max-w-xl text-lg leading-relaxed">
+            {profile.bio || "This teacher hasn't added a bio yet."}
+        </p>
         
         <div className="flex gap-4 mt-6">
-            <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-2xl font-bold text-sm">
+            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20 font-bold text-sm">
                 <GraduationCap className="w-4 h-4" /> {profile.education || "Student"}
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-2xl font-bold text-sm">
+            <div className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 rounded-2xl font-bold text-sm">
                 <BookOpen className="w-4 h-4" /> {teacherCourses.length} Courses
             </div>
         </div>
       </div>        
+
+      {/* Video Section */}
       {embedUrl && (
-      <div className="bg-white p-2 rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="aspect-video w-full">
+        <div className="bg-slate-900 p-3 rounded-[2rem] border border-slate-800 shadow-xl overflow-hidden">
+          <div className="aspect-video w-full rounded-2xl overflow-hidden border border-slate-800 bg-black">
             <iframe
               width="100%"
               height="100%"
@@ -100,36 +116,39 @@ export default function PublicProfile() {
               className="rounded-2xl"
             ></iframe>
           </div>
-          <div className="p-4 flex items-center gap-2 text-gray-500 text-sm font-medium">
-            <PlayCircle className="w-4 h-4 text-red-500" />
+          <div className="p-4 flex items-center gap-2 text-slate-400 text-sm font-medium">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
             Watch {profile.username}'s Teaching Demo
           </div>
         </div>
       )}
+
       {/* Courses List Section */}
       <div>
-        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-800">
-          <PlayCircle className="w-6 h-6 text-blue-600" /> Courses by {profile.username}
+        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-slate-100">
+          <PlayCircle className="w-6 h-6 text-emerald-500" /> Courses by {profile.username}
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {teacherCourses.map(course => (
-            <div key={course.id} className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all flex flex-col">
+            <div key={course.id} className="bg-slate-900 rounded-[2rem] border border-slate-800 overflow-hidden hover:shadow-[0_0_30px_rgba(16,185,129,0.05)] hover:-translate-y-1 transition-all duration-300 flex flex-col group">
               <div className="p-6 flex-1">
                 <div className="flex justify-between items-start mb-4">
-                    <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                    <span className="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
                         {course.category}
                     </span>
-                    <span className="font-black text-gray-900">🪙 {course.price_coins}</span>
+                    <span className="font-black text-white">🪙 {course.price_coins}</span>
                 </div>
-                <h4 className="text-lg font-bold text-gray-900 mb-2 leading-tight">{course.title}</h4>
-                <p className="text-sm text-gray-500 line-clamp-2">{course.description}</p>
+                <h4 className="text-lg font-bold text-white mb-2 leading-tight group-hover:text-emerald-400 transition-colors">
+                    {course.title}
+                </h4>
+                <p className="text-sm text-slate-400 line-clamp-2">{course.description}</p>
               </div>
               
-              <div className="p-4 bg-gray-50 border-t border-gray-100">
+              <div className="p-4 bg-slate-800/50 border-t border-slate-800">
                 <button 
                   onClick={() => handleEnroll(course)}
-                  className="w-full bg-blue-600 text-white py-3 rounded-2xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-100"
+                  className="w-full bg-emerald-600 text-white py-3 rounded-2xl font-bold hover:bg-emerald-500 transition shadow-lg shadow-emerald-900/20 active:scale-95"
                 >
                   Enroll Now
                 </button>
@@ -138,8 +157,8 @@ export default function PublicProfile() {
           ))}
 
           {teacherCourses.length === 0 && (
-            <div className="col-span-full p-20 text-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-              <p className="text-gray-400 font-medium italic">This user hasn't posted any courses yet.</p>
+            <div className="col-span-full p-20 text-center bg-slate-900/50 rounded-[2.5rem] border-2 border-dashed border-slate-800">
+              <p className="text-slate-500 font-medium italic">This user hasn't posted any courses yet.</p>
             </div>
           )}
         </div>
