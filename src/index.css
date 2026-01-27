@@ -1,0 +1,46 @@
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  background-color: red !important;
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  @apply bg-gray-50 text-gray-900; /* Sets the global background color */
+}
+
+/* Customizing the Supabase Auth UI to match your theme */
+.supabase-account-auth_ui_kit {
+  @apply font-sans;
+}
+
+.supabase-account-auth_ui_kit button {
+  @apply transition-all duration-200 active:scale-95 !important;
+  font-weight: 600 !important;
+}
+
+.supabase-account-auth_ui_kit input {
+  @apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all !important;
+}
+
+/* Custom Scrollbar for the 'Udemy' feel */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+}

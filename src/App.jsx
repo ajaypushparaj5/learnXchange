@@ -3,11 +3,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from './lib/supabaseClient';
-
+import { CoinProvider } from './context/CoinContext';
 // Import Page Components
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import MeTab from './pages/MeTab';
+import PublicProfile from './pages/PublicProfile';
 
 // 1. Create a sub-component for Login to isolate the Auth Hook logic
 function LoginScreen() {
@@ -60,17 +61,20 @@ export default function App() {
 
   // If logged in, show the actual app
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Navbar balance={100} />
-        <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/me" element={<MeTab session={session} />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </main>
-      </div>
-    </BrowserRouter>
+    <CoinProvider session={session}>
+      <BrowserRouter>
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+          <Navbar />
+          <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/me" element={<MeTab session={session} />} />
+              <Route path="/profile/:userId" element={<PublicProfile />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </main>
+        </div>
+      </BrowserRouter>
+    </CoinProvider>
   );
 }

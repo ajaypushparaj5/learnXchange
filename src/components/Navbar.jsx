@@ -1,7 +1,10 @@
 import { Wallet, User, Home, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useCoins } from '../context/CoinContext';
 
-export default function Navbar({ balance = 100 }) {
+export default function Navbar() {
+  const { balance } = useCoins() || { balance: 0 };
+
   return (
     <nav className="flex justify-between items-center p-4 border-b bg-white sticky top-0 z-50">
       <Link to="/" className="text-2xl font-bold text-blue-600 tracking-tight">
