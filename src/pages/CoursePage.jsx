@@ -188,6 +188,25 @@ const getEmbedUrl = (url) => {
   return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
 };
 
+const handleEnroll = async () => {
+  const confirmEnroll = window.confirm(`Enroll in this course for ${course.price_coins} coins?`);
+  if (!confirmEnroll) return;
+
+  if (balance < course.price_coins) return alert("Insufficient Balance!");
+
+  const { error } = await supabase.from('enrollments').insert([
+    { learner_id: user.id, course_id: course.id, teacher_id: course.teacher_id }
+  ]);
+
+  if (!error) {
+    // Logic to deduct coins
+    await supabase.from('profiles').update({ coin_balance: balance - course.price_coins }).eq('id', user.id);
+    fetchBalance();
+    setIsEnrolled(true);
+    alert("Welcome to the class! Check 'My Learning' to start.");
+  }
+};
+
 export default function CoursePage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
@@ -269,6 +288,11 @@ export default function CoursePage() {
                 <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Enrollment Fee</p>
                 <h3 className="text-4xl font-black text-emerald-400">🪙 {course.price_coins}</h3>
              </div>
+             <div className="p-4 bg-slate-800/50 rounded-2xl space-y-2">
+                <div className="flex justify-between text-sm"><span className="text-slate-500">Schedule</span><span className="text-emerald-400 font-bold">{course.schedule_days}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-slate-500">Time</span><span className="text-emerald-400 font-bold">{course.schedule_time}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-slate-500">Rating</span><span className="text-yellow-500 font-bold">⭐ {course.average_rating}</span></div>
+                </div>
              {isEnrolled ? (
                <button className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black flex items-center justify-center gap-2">
                  <Calendar className="w-5 h-5" /> Schedule Live Class

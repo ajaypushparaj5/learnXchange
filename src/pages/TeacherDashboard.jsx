@@ -51,7 +51,10 @@ export default function TeacherDashboard({ session }) {
         content: editingCourse.content,
         image_url: editingCourse.image_url,
         demo_video_url: editingCourse.demo_video_url,
-        price_coins: editingCourse.price_coins
+        price_coins: editingCourse.price_coins,
+        total_sessions: editingCourse.total_sessions,
+        schedule_days: editingCourse.schedule_days || '',
+        schedule_time: editingCourse.schedule_time || '12:00:00'
       })
       .eq('id', editingCourse.id);
 
@@ -190,7 +193,26 @@ export default function TeacherDashboard({ session }) {
                   placeholder="https://www.youtube.com/watch?v=..."
                 />
               </div>
-            </div>
+
+                <div>
+                <label className="text-[10px] uppercase font-black text-slate-500 mb-2 block">Total Sessions Required</label>
+                <input type="number" className="w-full p-4 bg-slate-800 border border-slate-700 rounded-2xl"
+                    value={editingCourse.total_sessions || ''} onChange={e => setEditingCourse({...editingCourse, total_sessions: e.target.value})} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="text-[10px] uppercase font-black text-slate-500 mb-2 block">Days (e.g. Mon, Wed)</label>
+                    <input type="text" className="w-full p-4 bg-slate-800 border border-slate-700 rounded-2xl"
+                    value={editingCourse.schedule_days || ''} onChange={e => setEditingCourse({...editingCourse, schedule_days: e.target.value})} />
+                </div>
+                <div>
+                    <label className="text-[10px] uppercase font-black text-slate-500 mb-2 block">Time (GMT)</label>
+                    <input type="time" className="w-full p-4 bg-slate-800 border border-slate-700 rounded-2xl"
+                    value={editingCourse.schedule_time || ''} onChange={e => setEditingCourse({...editingCourse, schedule_time: e.target.value})} />
+                </div>
+                </div>
+                </div>
 
             <button type="submit" className="w-full bg-emerald-600 py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-2 hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-900/30">
               <Save className="w-6 h-6" /> Save Class Updates
