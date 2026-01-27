@@ -87,6 +87,7 @@ import { supabase } from './lib/supabaseClient';
 import { CoinProvider } from './context/CoinContext';
 import CoursePage from './pages/CoursePage';
 import TeacherDashboard from './pages/TeacherDashboard';
+import MyLearning from './pages/MyLearning';
 // Import Page Components
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -157,6 +158,7 @@ export default function App() {
               <Route path="/profile/:userId" element={<PublicProfile />} />
               <Route path="*" element={<Navigate to="/" />} />
               <Route path="/dashboard" element={<TeacherDashboard session={session} />} />
+              <Route path="/learning" element={<MyLearning />} />
               <Route path="/course/:courseId" element={<CoursePage />} />
             </Routes>
           </main>

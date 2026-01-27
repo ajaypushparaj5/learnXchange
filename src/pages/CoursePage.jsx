@@ -189,21 +189,50 @@ const getEmbedUrl = (url) => {
 };
 
 const handleEnroll = async () => {
-  const confirmEnroll = window.confirm(`Enroll in this course for ${course.price_coins} coins?`);
+  // 1. Confirmation Prompt
+  const confirmEnroll = window.confirm(
+    `Are you sure you want to enroll in "${course.title}" for ${course.price_coins} coins?`
+  );
   if (!confirmEnroll) return;
 
-  if (balance < course.price_coins) return alert("Insufficient Balance!");
+  // 2. Check Balance
+  if (balance < course.price_coins) {
+    alert("❌ Insufficient balance. Please earn more coins by teaching!");
+    return;
+  }
 
-  const { error } = await supabase.from('enrollments').insert([
-    { learner_id: user.id, course_id: course.id, teacher_id: course.teacher_id }
-  ]);
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!error) {
-    // Logic to deduct coins
-    await supabase.from('profiles').update({ coin_balance: balance - course.price_coins }).eq('id', user.id);
-    fetchBalance();
+  // 3. Create Enrollment Record
+  const { error: enrollError } = await supabase
+    .from('enrollments')
+    .insert([
+      { 
+        learner_id: user.id, 
+        course_id: course.id, 
+        teacher_id: course.teacher_id,
+        sessions_attended: 0,
+        is_completed: false
+      }
+    ]);
+
+  if (enrollError) {
+    alert("Error enrolling: " + enrollError.message);
+    return;
+  }
+
+  // 4. Deduct Coins from Student Profile
+  const { error: balanceError } = await supabase
+    .from('profiles')
+    .update({ coin_balance: balance - course.price_coins })
+    .eq('id', user.id);
+
+  if (!balanceError) {
+    fetchBalance(); // Update the global navbar balance
     setIsEnrolled(true);
-    alert("Welcome to the class! Check 'My Learning' to start.");
+    alert("🎉 Successfully Enrolled! You can find this in 'My Learning'.");
+  } else {
+    alert("Error updating balance: " + balanceError.message);
   }
 };
 
@@ -215,6 +244,66 @@ export default function CoursePage() {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  
+  const handleEnroll = async () => {
+  if (!course) return;
+
+  const confirmEnroll = window.confirm(`Enroll in "${course.title}" for ${course.price_coins} coins?`);
+  if (!confirmEnroll) return;
+
+  if (balance < course.price_coins) {
+    alert("❌ Insufficient balance!");
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // 1. Create the Enrollment
+  const { data: enrollment, error: enrollError } = await supabase
+    .from('enrollments')
+    .insert([
+      { 
+        learner_id: user.id, 
+        course_id: course.id, 
+        teacher_id: course.teacher_id,
+        sessions_attended: 0
+      }
+    ])
+    .select()
+    .single();
+
+  if (enrollError) return alert("Enrollment failed: " + enrollError.message);
+
+  // 2. Create the FIRST Live Session automatically
+  // This ensures the teacher sees it in their dashboard immediately
+  const { error: sessionError } = await supabase
+    .from('course_sessions')
+    .insert([
+      {
+        course_id: course.id,
+        teacher_id: course.teacher_id,
+        learner_id: user.id,
+        enrollment_id: enrollment.id,
+        scheduled_at: new Date().toISOString(), // Default to "Now" or a future date
+        status: 'scheduled',
+        meeting_link: 'https://meet.google.com/new' // Placeholder link
+      }
+    ]);
+
+  if (sessionError) console.error("Session creation error:", sessionError);
+
+  // 3. Deduct Coins
+  const { error: balanceError } = await supabase
+    .from('profiles')
+    .update({ coin_balance: balance - course.price_coins })
+    .eq('id', user.id);
+
+  if (!balanceError) {
+    await fetchBalance();
+    setIsEnrolled(true);
+    alert("🎉 Enrolled! The teacher has been notified and a session is created.");
+  }
+};
 
   useEffect(() => {
     async function fetchCourseData() {
@@ -293,7 +382,7 @@ export default function CoursePage() {
                 <div className="flex justify-between text-sm"><span className="text-slate-500">Time</span><span className="text-emerald-400 font-bold">{course.schedule_time}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-slate-500">Rating</span><span className="text-yellow-500 font-bold">⭐ {course.average_rating}</span></div>
                 </div>
-             {isEnrolled ? (
+             {/* {isEnrolled ? (
                <button className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black flex items-center justify-center gap-2">
                  <Calendar className="w-5 h-5" /> Schedule Live Class
                </button>
@@ -301,7 +390,23 @@ export default function CoursePage() {
                <button className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black">
                  Enroll Now
                </button>
-             )}
+             )} */}
+            {isEnrolled ? (
+            <button 
+                onClick={() => navigate('/learning')}
+                className="w-full bg-slate-800 text-emerald-400 py-4 rounded-2xl font-black flex items-center justify-center gap-2 border border-emerald-500/20"
+            >
+                <CheckCircle className="w-5 h-5" /> Already Enrolled - View Progress
+            </button>
+            ) : (
+            <button 
+                onClick={handleEnroll}
+                className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black hover:bg-emerald-500 shadow-xl shadow-emerald-900/20 transition-all active:scale-95"
+            >
+                Enroll Now
+            </button>
+            )}
+
           </div>
         </div>
       </div>

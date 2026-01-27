@@ -19,6 +19,11 @@ export default function Navbar() {
             <Home className="w-4 h-4" />
             <span>Marketplace</span>
           </Link>
+
+          <Link to="/learning" className="flex items-center gap-1 text-slate-400 hover:text-emerald-400 font-medium transition-colors">
+            <Home className="w-4 h-4" />
+            <span>My Learning</span>
+          </Link>
           
           <Link to="/dashboard" className="flex items-center gap-1 text-slate-400 hover:text-emerald-400 font-medium transition-colors">
             <Video className="w-4 h-4" />
