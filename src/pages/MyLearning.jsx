@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useCoins } from '../context/CoinContext';
-import { BookOpen, Award, PlayCircle, Clock, RefreshCw, CheckCircle, Lock, ExternalLink } from 'lucide-react';
+import { BookOpen, Award, PlayCircle, Clock, RefreshCw, CheckCircle, Lock, ExternalLink ,MessageSquare} from 'lucide-react';
 
 export default function MyLearning() {
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
   const { balance, fetchBalance } = useCoins();
   const CERT_FEE = 500;
+  const [reviewingCourse, setReviewingCourse] = useState(null); // Stores the enrollment object
+const [rating, setRating] = useState(5);
+const [comment, setComment] = useState("");
+const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchEnrollments();
@@ -75,7 +79,76 @@ const merged = enrollData?.map(enroll => ({
         SYNCING YOUR PROGRESS...
       </div>
     </div>
-  );
+  );    
+
+  const handleTrialDecision = async (enrollment, continueCourse) => {
+  const coursePrice = enrollment.courses.price_coins;
+  const teacherId = enrollment.courses.teacher_id;
+  
+  if (continueCourse) {
+    // RELEASE FULL PAYMENT
+    // 1. Update Enrollment
+    await supabase.from('enrollments')
+      .update({ payment_status: 'released', learner_confirmed: true })
+      .eq('id', enrollment.id);
+
+    // 2. Pay Teacher the remaining 100% (assuming teacher hasn't been paid yet)
+    const { data: teacherProfile } = await supabase
+      .from('profiles').select('coin_balance').eq('id', teacherId).single();
+    
+    await supabase.from('profiles')
+      .update({ coin_balance: teacherProfile.coin_balance + coursePrice })
+      .eq('id', teacherId);
+
+    alert("Awesome! The full payment has been released to the mentor.");
+  } else {
+    // REFUND 90%, PAY TEACHER 10%
+    const teacherCut = Math.floor(coursePrice * 0.1);
+    const learnerRefund = coursePrice - teacherCut;
+
+    // 1. Update Enrollment
+    await supabase.from('enrollments')
+      .update({ payment_status: 'refunded', is_completed: true })
+      .eq('id', enrollment.id);
+
+    // 2. Update Teacher Balance (+10%)
+    const { data: teacher } = await supabase.from('profiles').select('coin_balance').eq('id', teacherId).single();
+    await supabase.from('profiles').update({ coin_balance: teacher.coin_balance + teacherCut }).eq('id', teacherId);
+
+    // 3. Update Learner Balance (+90%)
+    const { data: learner } = await supabase.from('profiles').select('coin_balance').eq('id', enrollment.learner_id).single();
+    await supabase.from('profiles').update({ coin_balance: learner.coin_balance + learnerRefund }).eq('id', enrollment.learner_id);
+
+    alert(`Refund processed. ${learnerRefund} coins returned to your wallet.`);
+  }
+  fetchEnrollments();
+};
+
+const handlePostReview = async (e) => {
+  e.preventDefault();
+  setSubmitting(true);
+  
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { error } = await supabase
+    .from('reviews')
+    .insert([{
+      course_id: reviewingCourse.course_id, // This is your BIGINT
+      learner_id: user.id,                 // This is your UUID
+      rating: rating,
+      comment: comment
+    }]);
+
+  if (error) {
+    alert("Error saving review: " + error.message);
+  } else {
+    alert("Testimonial shared! ⭐");
+    setReviewingCourse(null);
+    setComment("");
+    fetchEnrollments(); // Refresh to update !item.has_reviewed status
+  }
+  setSubmitting(false);
+};
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-10 text-white min-h-screen">
@@ -169,6 +242,16 @@ const merged = enrollData?.map(enroll => ({
                       <Lock className="w-4 h-4" /> Certificate Locked
                     </div>
                   )}
+
+                    {isFinished && !item.has_reviewed && (
+                    <button 
+                        onClick={() => setReviewingCourse(item)}
+                        className="bg-emerald-500/10 text-emerald-400 px-4 py-2 rounded-xl border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2"
+                    >
+                        <MessageSquare className="w-4 h-4" /> Share Feedback
+                    </button>
+                    )}
+
                 </div>
               </div>
             </div>
@@ -181,6 +264,56 @@ const merged = enrollData?.map(enroll => ({
           </div>
         )}
       </div>
+      {reviewingCourse && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl">
+      <h2 className="text-2xl font-black mb-2">Share your experience</h2>
+      <p className="text-slate-400 text-sm mb-6">Reviewing: {reviewingCourse.courses.title}</p>
+
+      <form onSubmit={handlePostReview} className="space-y-6">
+        {/* Star Selection */}
+        <div className="flex justify-center gap-3 text-3xl">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() => setRating(star)}
+              className={`transition-transform hover:scale-125 ${rating >= star ? 'text-yellow-400' : 'text-slate-700'}`}
+            >
+              ★
+            </button>
+          ))}
+        </div>
+
+        {/* Comment Box */}
+        <textarea
+          required
+          placeholder="What did you think of this peer-to-peer exchange?"
+          className="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-white focus:outline-none focus:border-emerald-500 transition-all h-32"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+        />
+
+        <div className="flex gap-4">
+          <button
+            type="button"
+            onClick={() => setReviewingCourse(null)}
+            className="flex-1 py-4 font-black text-slate-400 hover:text-white transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-4 rounded-2xl font-black transition-all shadow-lg shadow-emerald-900/20 disabled:opacity-50"
+          >
+            {submitting ? 'Posting...' : 'Post Review'}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 }
