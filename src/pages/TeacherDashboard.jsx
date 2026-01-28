@@ -228,7 +228,7 @@ export default function TeacherDashboard({ session }) {
       // C. Fetch Enrollments & Manual Join Profiles
       const { data: enrolls } = await supabase
         .from('enrollments')
-        .select('*, courses:course_id(title, total_sessions)')
+        .select('*, courses:course_id(title, total_sessions), payment_status')
         .eq('teacher_id', session.user.id)
         .eq('is_completed', false);
 
@@ -313,6 +313,41 @@ export default function TeacherDashboard({ session }) {
       loadTeacherData();
     }
   };
+
+  const handleUpdateCourse = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    const { error } = await supabase
+      .from('courses')
+      .update({
+        title: editingCourse.title,
+        description: editingCourse.description,
+        price_coins: editingCourse.price_coins,
+        category: editingCourse.category,
+        schedule_days: editingCourse.schedule_days,
+        schedule_time: editingCourse.schedule_time,
+        demo_video_url: editingCourse.demo_video_url,
+        content: editingCourse.content
+      })
+      .eq('id', editingCourse.id);
+
+    if (error) throw error;
+
+    alert("Class configuration updated successfully! 🚀");
+    setEditingCourse(null); // Close the modal
+    
+    // REFRESH DATA
+    if (typeof loadTeacherData === 'function') {
+      await loadTeacherData(); 
+    }
+  } catch (error) {
+    alert("Update failed: " + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (loading) return <div className="p-20 text-center text-emerald-500 font-bold animate-pulse">Syncing...</div>;
 
