@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useCoins } from '../context/CoinContext';
 import { 
-  ShieldCheck, 
+  ShieldCheck,
+  ExternalLink,
+  X, 
   CheckCircle, 
   RefreshCw, 
   MessageSquare, 
@@ -93,6 +95,53 @@ export default function MyLearning() {
       fetchEnrollments();
     }
   };
+
+const handleUnlockCertificate = async (enrollment) => {
+  // If already unlocked, just open it
+  if (enrollment.certificate_unlocked) {
+    window.open('/cert.jpg', '_blank');
+    return;
+  }
+
+  // Balance Check
+  if (balance < 500) {
+    alert("You need 500 coins to unlock this certificate! 🪙");
+    return;
+  }
+
+  if (!window.confirm("Confirm 500 coin payment to unlock and view your certificate?")) return;
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // 1. Deduct Coins
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ coin_balance: balance - 500 })
+      .eq('id', user.id);
+
+    if (profileError) throw profileError;
+
+    // 2. Mark as Unlocked
+    const { error: enrollError } = await supabase
+      .from('enrollments')
+      .update({ certificate_unlocked: true })
+      .eq('id', enrollment.id);
+
+    if (enrollError) throw enrollError;
+
+    // 3. Update UI
+    await fetchBalance();
+    await fetchEnrollments();
+
+    // 4. Open in new tab
+    window.open('/cert.jpg', '_blank');
+
+  } catch (err) {
+    console.error("Unlock Error:", err);
+    alert("Transaction failed.");
+  }
+};
 
 const handlePostReview = async (e) => {
   e.preventDefault();
@@ -213,11 +262,22 @@ const handlePostReview = async (e) => {
                     {isFinished ? (
                       <div className="flex-1 flex gap-2">
                         <button 
-                          onClick={() => !item.certificate_unlocked && handleUnlockCertificate(item)}
-                          className={`flex-1 font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all ${item.certificate_unlocked ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-900/20' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                        onClick={() => handleUnlockCertificate(item)}
+                        className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all shadow-lg ${
+                            item.certificate_unlocked 
+                            ? 'bg-yellow-500 text-slate-950 hover:bg-yellow-400 shadow-yellow-900/20' 
+                            : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/20'
+                        }`}
                         >
-                          <Award className="w-5 h-5" /> 
-                          {item.certificate_unlocked ? "VIEW CERTIFICATE" : `CLAIM (🪙 ${CERT_FEE})`}
+                        {item.certificate_unlocked ? (
+                            <>
+                            <ExternalLink size={16} /> View Certificate
+                            </>
+                        ) : (
+                            <>
+                            <Lock size={16} /> Unlock Certificate (🪙 500)
+                            </>
+                        )}
                         </button>
                         
                         {!item.has_reviewed && (
